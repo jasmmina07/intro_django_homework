@@ -1,19 +1,11 @@
 from django.http import HttpRequest, JsonResponse
 import json
-data = {
-    1: {
-        'name': 'Milk',
-        'price': 2.5,
-        "type":"Milk",
-        'quantity': 10
-    },
-    2: {
-        'name': 'Bread',
-        'price': 1.5,
-        'type':'Bread',
-        'quantity': 20
-    },
-}
+from tinydb import TinyDB,Query
+from tinydb.database import Document
+
+db=TinyDB("db.json",indent=4)
+data=db.table("grocery")
+
 # Grocery store API
 # GET /grocery - this endpoint will display a list of fruits.
 # POST /grocery/add - this endpoint will display a form that allows users to add new fruits to the list.
@@ -25,28 +17,16 @@ def home(request: HttpRequest):
     return JsonResponse({"message":"Welcome!"})
 
 def get_all_items(request: HttpRequest):
-    return JsonResponse(data)
+    return JsonResponse({"response":data.all()})
 
 def grocery_by_type(request: HttpRequest,type):
-    resp=[]
-    for i in data:
-        if data[i]["type"]==type:
-            resp.append(data[i])
-    return JsonResponse({"response":resp})
+    return JsonResponse({"response":data.search(Query().type==type)})
 
 def grocery_by_price(request: HttpRequest,price):
-    resp=[]
-    for i in data:
-        if data[i]["price"]<=int(price):
-            resp.append(data[i])
-    return JsonResponse({"response":resp})
+    return JsonResponse({"response":data.search(Query().price<=float(price))})
 
 def grocery_by_name(request: HttpRequest,name):
-    resp=[]
-    for i in data:
-        if data[i]["name"]==name:
-            resp.append(data[i])
-    return JsonResponse({"response":resp})
+    return JsonResponse({"response":data.search(Query().name==name)})
 
 def grocery(request: HttpRequest):
     arr=[]
@@ -58,7 +38,8 @@ def add_item(request: HttpRequest):
     if request.method=='POST':
         item=request.body
         item=json.loads(item)
-        data[len(data)+1]=item
+        doc=Document(value=item)
+        data.insert(doc)
         return JsonResponse(data)
     else:
         return JsonResponse({'status':'method is not POST'})
